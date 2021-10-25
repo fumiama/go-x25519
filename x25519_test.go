@@ -21,7 +21,7 @@ func TestStardardKey(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ask := NewSecretKey(askhex)
+	ask := Get(askhex)
 	apk := ask.Public()
 	if alicePK != hex.EncodeToString(apk[:]) {
 		t.Fatal("public key failed")
@@ -32,14 +32,20 @@ func TestStardardKey(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	bsk := NewSecretKey(bskhex)
+	bsk := Get(bskhex)
 	bpk := bsk.Public()
 	if bobPK != hex.EncodeToString(bpk[:]) {
 		t.Fatal("public key failed")
 	}
 
-	s1 := ask.Shared(bpk)
-	s2 := bsk.Shared(apk)
+	s1, err := ask.Shared(bpk)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s2, err := bsk.Shared(apk)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if !bytes.Equal(s1, s2) {
 		t.Fatal("shared secret failed")
 	}
@@ -50,28 +56,18 @@ func TestStardardKey(t *testing.T) {
 
 func TestGenerateKey(t *testing.T) {
 	for i := 0; i < 100; i++ {
-		ourSK, _ := GenerateKey(nil)
-		theirSK, _ := GenerateKey(nil)
-		s1 := ourSK.Shared(theirSK.Public())
-		s2 := theirSK.Shared(ourSK.Public())
+		ourSK, _ := New(nil)
+		theirSK, _ := New(nil)
+		s1, err := ourSK.Shared(theirSK.Public())
+		if err != nil {
+			t.Fatal(err)
+		}
+		s2, err := theirSK.Shared(ourSK.Public())
+		if err != nil {
+			t.Fatal(err)
+		}
 		if !bytes.Equal(s1, s2) {
 			t.Fatal("computed shared secrets differs")
-		}
-	}
-}
-
-func TestUniformRepresentative(t *testing.T) {
-
-	for i := 0; i < 1; i++ {
-		k, _ := GenerateKey(nil)
-		sk, _ := GenerateKeyUniform(nil)
-		pk := sk.Public()
-		ur := sk.PublicUniform()
-		if !bytes.Equal(ur.Public(), pk) {
-			t.Fatal("public key and its uniform representative do not match")
-		}
-		if !bytes.Equal(k.Shared(sk.Public()), k.SharedUniform(sk.PublicUniform())) {
-			t.Fatalf("shared secrets do not match")
 		}
 	}
 }
